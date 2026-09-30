@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#3b5a8f" />
+  <title>Chesspath</title>
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/kingdom.css" />
+  <link rel="stylesheet" href="css/board.css" />
+  <link rel="stylesheet" href="css/map.css" />
+  <link rel="preload" href="assets/reino.webp" as="image" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" href="icons/icon-192.png" />
+</head>
+<body>
+  <div id="app">
+    <!-- Botón para volver al mapa (solo dentro de un capítulo) -->
+    <button id="map-btn" type="button" class="hidden" data-i18n-title="ui.map"></button>
+
+    <!-- Barra superior: idioma + silencio -->
+    <div id="top-bar">
+      <div class="lang-switch" role="group" data-i18n-title="ui.lang">
+        <button type="button" data-lang="es">ES</button>
+        <button type="button" data-lang="en">EN</button>
+      </div>
+      <button id="mute-btn" type="button">🔊</button>
+    </div>
+
+    <!-- Pantalla de introducción / mensajes -->
+    <div id="overlay" class="overlay hidden">
+      <div class="overlay-content">
+        <p id="overlay-text"></p>
+        <button id="overlay-btn" class="btn primary" data-i18n="ui.continue">Continuar</button>
+      </div>
+    </div>
+
+    <!-- ═══ PANTALLA DEL MAPA DEL REINO ═══ -->
+    <section id="map-screen" class="hidden">
+      <div id="map-scroller">
+        <div id="map-world">
+          <img src="assets/reino.webp" alt="" draggable="false" />
+          <div id="map-layer"></div>
+        </div>
+      </div>
+      <header class="map-brand">
+        <div class="logo">Chesspath</div>
+        <div class="tagline" data-i18n="map.tagline">Un reino, siete capítulos, una gran aventura</div>
+      </header>
+      <div id="map-swipe" data-i18n="map.swipe">Desliza para explorar el reino</div>
+      <div id="map-toast" role="status"></div>
+      <footer class="map-progress">
+        <span id="map-progress-text"></span>
+        <nav id="map-dots" aria-label="Capítulos"></nav>
+      </footer>
+    </section>
+
+    <!-- ═══ PANTALLA DE JUEGO (capítulo) ═══ -->
+    <section id="game-screen" class="hidden">
+    <!-- Contenedor del Reino -->
+    <div id="kingdom">
+      <div class="clouds clouds-back"></div>
+      <div class="far-islands" aria-hidden="true">
+        <span style="--x:8%;  --y:18%; --s:.55"></span>
+        <span style="--x:78%; --y:10%; --s:.4"></span>
+        <span style="--x:88%; --y:44%; --s:.3"></span>
+      </div>
+
+      <div id="scene" class="scene">
+        <svg id="island" class="island" aria-hidden="true"></svg>
+        <div id="board-anchor" class="board-anchor">
+          <div id="board" class="board"></div>
+        </div>
+      </div>
+
+      <div class="clouds clouds-front"></div>
+    </div>
+
+    <!-- UI de juego -->
+    <div id="ui">
+      <div id="message-box" class="message-box hidden">
+        <p id="message-text"></p>
+      </div>
+      <div id="progress-box" class="progress-box hidden">
+        <span id="progress-text"></span>
+      </div>
+      <div id="choices" class="choices hidden"></div>
+      <div class="actions">
+        <button id="hint-btn" class="btn secondary hint hidden" data-i18n="ui.hint">Pista</button>
+        <button id="solution-btn" class="btn secondary solution hidden" data-i18n="ui.solution">Ver solución</button>
+        <button id="reset-btn" class="btn secondary hidden" data-i18n="ui.reset">Reiniciar fase</button>
+      </div>
+    </div>
+    </section>
+  </div>
+
+  <!-- Aviso de arranque: si la app no inicia (p. ej. falta un archivo), lo muestra en pantalla -->
+  <script>
+    (function () {
+      function show(detail) {
+        if (window.__chesspathReady || document.getElementById("boot-error")) return;
+        var missing = [];
+        try {
+          performance.getEntriesByType("resource").forEach(function (r) {
+            if (r.responseStatus >= 400) {
+              // Ruta relativa a la carpeta de la app (más fácil de leer)
+              var base = location.href.replace(/[^\/]*$/, "");
+              missing.push(decodeURIComponent(r.name.replace(base, "")));
+            }
+          });
+        } catch (e) {}
+        var box = document.createElement("div");
+        box.id = "boot-error";
+        box.style.cssText = "position:fixed;inset:auto 16px 24px;z-index:999;background:#fff3f0;color:#5a1a10;" +
+          "border:2px solid #d9534f;border-radius:12px;padding:14px 16px;font:15px/1.45 system-ui,sans-serif;" +
+          "overflow-wrap:anywhere;max-height:60vh;overflow:auto";
+        box.innerHTML = "<b>Chesspath no pudo iniciar.</b><br>" +
+          (missing.length ? "Faltan estos archivos:<br><code>• " + missing.join("<br>• ") + "</code>" +
+                            "<br><small>Verifica que estén dentro de la carpeta de la app.</small>"
+                          : "Detalle: " + (detail || "error desconocido"));
+        document.body.appendChild(box);
+      }
+      window.addEventListener("error", function (e) {
+        var t = e.target;
+        if (t && (t.src || t.href)) return; // recursos: se revisan al final
+        setTimeout(function () { show(e.message); }, 300);
+      }, true);
+      window.addEventListener("load", function () {
+        setTimeout(function () { show("la app no terminó de cargar"); }, 2500);
+      });
+    })();
+  </script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
