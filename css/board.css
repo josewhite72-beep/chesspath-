@@ -1,0 +1,295 @@
+/* ─────────────────────────────────────────────
+   Tablero 3D
+   El marco (#board-anchor) se inclina con rotateX(--tilt).
+   Cada pieza aplica la rotación inversa para quedar "de pie".
+   IMPORTANTE: nada dentro del anchor puede usar overflow:hidden,
+   filter, opacity<1 ni clip-path, porque eso aplana el 3D.
+   ───────────────────────────────────────────── */
+:root {
+  --tilt: 52deg;
+}
+
+.board-anchor {
+  position: absolute;
+  z-index: 2;
+  transform: rotateX(var(--tilt));
+  transform-origin: 50% 50%;
+  transform-style: preserve-3d;
+  border-radius: 6px;
+  /* Marco de madera */
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.18), transparent 40%),
+    linear-gradient(180deg, #8a5a33, #6b4226);
+  box-shadow:
+    inset 0 0 0 2px #4a2c16,
+    inset 0 0 0 4px #a8744a;
+}
+
+/* 8×8: menos inclinación → más profundidad por fila y piezas que no se tapan */
+.board-anchor:has(#board[data-size="8"]) { --tilt: 34deg; }
+
+/* Canto frontal del marco (grosor visible del tablero) */
+.board-anchor::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  height: 12px;
+  transform-origin: top center;
+  transform: rotateX(-90deg);
+  background: linear-gradient(180deg, #5a3519, #3a200d);
+  border-radius: 0 0 4px 4px;
+}
+
+.board {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  grid-template-rows: repeat(6, 1fr);
+  transform-style: preserve-3d;
+}
+
+.square {
+  position: relative;
+  transform-style: preserve-3d;
+  transform: translateZ(0.5px); /* por encima del plano del tablero (toques fiables) */
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.square.light { background-color: var(--light-square); }
+.square.dark  { background-color: var(--dark-square); }
+
+.square.highlight {
+  background-color: color-mix(in srgb, var(--highlight-solid) 55%, transparent);
+}
+.square.light.highlight { background-color: #f3e79b; }
+.square.dark.highlight  { background-color: #d2b86a; }
+
+/* Punto en las casillas a las que se puede mover */
+.square.highlight::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 30%;
+  height: 30%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: rgba(60, 110, 40, 0.55);
+  box-shadow: 0 0 10px rgba(255, 255, 180, 0.9);
+}
+
+/* Anillo si la casilla tiene una pieza que se puede capturar */
+.square.highlight:has(.piece)::before {
+  width: 86%;
+  height: 86%;
+  background: transparent;
+  border: 4px solid rgba(200, 50, 40, 0.75);
+  box-shadow: 0 0 10px rgba(255, 120, 90, 0.8);
+}
+
+.square.selected {
+  box-shadow: inset 0 0 0 3px #f0c040, inset 0 0 14px rgba(255, 220, 90, 0.8);
+}
+
+/* Pista: la casilla late con un brillo dorado */
+.square.hint-pulse {
+  animation: hintPulse 0.85s ease-in-out 3;
+}
+
+@keyframes hintPulse {
+  0%, 100% { box-shadow: inset 0 0 0 0 rgba(255, 215, 80, 0); }
+  50%      { box-shadow: inset 0 0 0 5px rgba(255, 215, 80, 0.95), inset 0 0 22px rgba(255, 240, 150, 0.9); }
+}
+
+/* Sombra de la pieza sobre la casilla */
+.square:has(> .piece:not(.captured))::after {
+  content: "";
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  top: 56%;
+  height: 30%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(0,0,0,.45), rgba(0,0,0,0));
+  pointer-events: none;
+}
+
+/* ── Piezas de pie ── */
+.piece {
+  --lift: 0%;
+  position: absolute;
+  left: -5%;
+  width: 110%;
+  height: 143%;           /* viewBox 100×130 → proporción 1.3 */
+  bottom: 22%;            /* la base queda cerca del centro de la casilla */
+  transform-origin: 50% 100%;
+  transform: translateZ(1px) rotateX(calc(var(--tilt) * -1)) translateY(var(--lift));
+  transition: transform 0.2s ease;
+  pointer-events: none;   /* el toque lo recibe la casilla */
+}
+
+/* 8×8: casillas más pequeñas → piezas un poco más bajas para no taparse */
+#board[data-size="8"] .piece {
+  left: 8%;
+  width: 84%;
+  height: 109%;
+  bottom: 30%;
+}
+
+.piece svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+
+.piece .shine {
+  fill: rgba(255, 255, 255, 0.35);
+  stroke: none;
+}
+
+.piece.black .shine {
+  fill: rgba(255, 255, 255, 0.14);
+}
+
+/* Pieza seleccionada: se eleva */
+.square.selected .piece {
+  --lift: -12%;
+}
+
+/* Llegada tras moverse */
+.piece.arrive {
+  animation: arrive 0.28s ease-out;
+}
+
+@keyframes arrive {
+  0%   { --lift: -18%; }
+  100% { --lift: 0%; }
+}
+
+/* Pieza capturada: se hunde y desaparece */
+.piece.captured {
+  animation: captured 0.35s ease-in forwards;
+}
+
+@keyframes captured {
+  to { --lift: 30%; height: 0%; }
+}
+
+/* Promoción: destello dorado */
+.piece.promoting svg {
+  animation: promote 0.7s ease-out;
+}
+
+@keyframes promote {
+  0%   { filter: drop-shadow(0 0 0 gold) brightness(2); transform: scale(0.6); }
+  60%  { filter: drop-shadow(0 0 14px gold) brightness(1.3); transform: scale(1.12); }
+  100% { filter: drop-shadow(0 0 4px rgba(255,215,0,.6)); transform: scale(1); }
+}
+
+@property --lift {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 0%;
+}
+
+/* Roca neutral */
+.piece.neutral .crack { stroke: #4a443c; stroke-width: 2; }
+.piece.neutral .shine { fill: rgba(255, 255, 255, 0.25); }
+
+/* Casilla objetivo: bandera */
+.square.target::before {
+  content: "";
+  position: absolute;
+  inset: 12%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 215, 90, 0.85), rgba(255, 215, 90, 0.15) 70%, transparent);
+  animation: targetGlow 1.6s ease-in-out infinite;
+}
+
+.square.target::after {
+  content: "";
+  position: absolute;
+  left: 30%;
+  bottom: 30%;
+  width: 55%;
+  height: 120%;
+  transform-origin: 0 100%;
+  transform: translateZ(1px) rotateX(calc(var(--tilt) * -1));
+  background: no-repeat center / contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 60'%3E%3Crect x='4' y='4' width='3' height='56' rx='1.5' fill='%235b3d26'/%3E%3Cpath d='M7 5 L36 12 L7 22 Z' fill='%23e8b830' stroke='%23a07818' stroke-width='1.5'/%3E%3C/svg%3E");
+  pointer-events: none;
+}
+
+@keyframes targetGlow {
+  0%, 100% { opacity: 0.6; transform: scale(0.9); }
+  50%      { opacity: 1;   transform: scale(1.05); }
+}
+
+/* Detalles de alfil y caballo */
+.piece .cut { stroke-width: 3; stroke-linecap: round; }
+.piece.white .cut { stroke: #6b5638; }
+.piece.black .cut { stroke: #8a8390; }
+.piece.white .eye { fill: #3b2a18; stroke: none; }
+.piece.black .eye { fill: #d8d2c4; stroke: none; }
+
+/* Dama: diagonales en otro color */
+.square.highlight.diag::before { background: rgba(120, 70, 200, 0.6); box-shadow: 0 0 10px rgba(200, 170, 255, 0.9); }
+
+/* Escudo: casilla peligrosa */
+.square.highlight.danger::before {
+  background: rgba(210, 40, 40, 0.75);
+  box-shadow: 0 0 12px rgba(255, 90, 90, 0.95);
+}
+
+/* Pieza defendida (escudito de pie sobre la pieza) */
+.square.defended::before {
+  content: "";
+  position: absolute;
+  left: 18%;
+  bottom: 158%;
+  width: 64%;
+  height: 76%;
+  z-index: 3;
+  transform-origin: 50% 100%;
+  transform: translateZ(6px) rotateX(calc(var(--tilt) * -1));
+  background: no-repeat center / contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 28'%3E%3Cpath d='M12 1 L22 5 V12 C22 19 17.5 24 12 27 C6.5 24 2 19 2 12 V5 Z' fill='%233b6fd1' stroke='%23fff' stroke-width='2'/%3E%3Cpath d='M8 13 L11 16 L16 10' fill='none' stroke='%23fff' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E");
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,.5));
+  pointer-events: none;
+}
+
+/* Rey en jaque */
+.square.in-check {
+  box-shadow: inset 0 0 0 4px rgba(220, 30, 30, 0.95), inset 0 0 22px rgba(255, 60, 60, 0.9);
+  animation: checkPulse 1s ease-in-out infinite;
+}
+@keyframes checkPulse {
+  50% { box-shadow: inset 0 0 0 4px rgba(220, 30, 30, 0.5), inset 0 0 10px rgba(255, 60, 60, 0.4); }
+}
+/* Casillas prohibidas para el rey (atacadas) */
+.square.forbidden::before {
+  content: "✕";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: rgba(200, 20, 20, 0.85);
+  font: 900 calc(var(--sqpx, 40px) * 0.6) / 1 system-ui, sans-serif;
+  background: rgba(230, 60, 60, 0.28);
+}
+
+/* ── Coordenadas (Capítulo 7) ── */
+.coord {
+  position: absolute;
+  font: 800 clamp(10px, 3.2vw, 14px)/1 system-ui, sans-serif;
+  pointer-events: none;
+  transform: translateZ(0.6px);
+  text-shadow: 0 0 2px rgba(0,0,0,.25);
+}
+.square.light .coord { color: #7a4a22; }
+.square.dark .coord { color: #fff4dc; }
+.coord.file { right: 6%; bottom: 4%; }
+.coord.rank { left: 6%; top: 4%; }
