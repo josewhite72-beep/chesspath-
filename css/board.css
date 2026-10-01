@@ -171,13 +171,77 @@
   100% { --lift: 0%; }
 }
 
-/* Pieza capturada: se hunde y desaparece */
-.piece.captured {
-  animation: captured 0.35s ease-in forwards;
+/* Piezas blancas "respiran" suavemente: tienen vida */
+.piece.white svg {
+  transform-origin: 50% 100%;
+  animation: breathe 2.6s ease-in-out infinite;
+  animation-delay: var(--bd, 0s);
 }
 
-@keyframes captured {
-  to { --lift: 30%; height: 0%; }
+@keyframes breathe {
+  50% { transform: scaleY(1.035) scaleX(0.985); }
+}
+
+/* Saltito al seleccionarla */
+.square.selected .piece svg {
+  animation: hop 0.42s ease-out;
+}
+
+@keyframes hop {
+  0%   { transform: translateY(0) scale(1, 1); }
+  35%  { transform: translateY(-14%) scale(0.96, 1.05); }
+  70%  { transform: translateY(0) scale(1.06, 0.94); }
+  100% { transform: translateY(0) scale(1, 1); }
+}
+
+/* Pieza capturada: sale volando y girando, sin violencia */
+.piece.captured svg {
+  transform-origin: 50% 70%;
+  animation: knockout 0.6s cubic-bezier(0.3, 0.1, 0.6, 1) forwards;
+}
+
+@keyframes knockout {
+  0%   { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  30%  { transform: translate(calc(10% * var(--dir, 1)), -40%) rotate(calc(30deg * var(--dir, 1))); opacity: 1; }
+  100% { transform: translate(calc(90% * var(--dir, 1)), -5%) rotate(calc(220deg * var(--dir, 1))) scale(0.35); opacity: 0; }
+}
+
+/* Celebración: las piezas blancas saltan de alegría */
+.piece.cheer svg {
+  animation: cheer 0.5s ease-out 3;
+  animation-delay: var(--cd, 0s);
+}
+
+@keyframes cheer {
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  20%      { transform: translateY(0) scale(1.08, 0.92); }
+  55%      { transform: translateY(-28%) scale(0.95, 1.06); }
+}
+
+/* Confeti */
+.confetti {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 60;
+}
+.confetti i {
+  position: absolute;
+  top: -4vh;
+  width: 9px;
+  height: 14px;
+  border-radius: 2px;
+  animation: confetti-fall var(--t, 2.4s) linear var(--d, 0s) forwards;
+}
+
+@keyframes confetti-fall {
+  to { transform: translate(var(--x, 0), 108vh) rotate(var(--r, 540deg)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .piece.white svg, .square.selected .piece svg, .piece.cheer svg { animation: none; }
+  .confetti { display: none; }
 }
 
 /* Promoción: destello dorado */
