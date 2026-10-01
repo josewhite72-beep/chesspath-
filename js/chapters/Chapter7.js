@@ -1,3 +1,4 @@
+import { celebrate } from "../ui/celebrate.js";
 import { StepChapter } from "./StepChapter.js";
 import { legalMoves, applyMove, inCheck, attacked } from "../game/Engine.js";
 import { aiBestMove, aiRivalMove, insufficientMaterial, positionKey, PIECE_VALUE } from "../game/GameAI.js";
@@ -485,6 +486,7 @@ export class Chapter7 extends StepChapter {
     this.currentObjective = "mission-over";
     if (result === "w") {
       this.ui.showProgress("ch1.race.wonShort");
+      celebrate(this.board);
       return this.finishStep(LEVELS[this.level].won, 3400);
     }
     this.gameLosses++;

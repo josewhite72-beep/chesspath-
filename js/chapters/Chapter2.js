@@ -1,3 +1,4 @@
+import { celebrate } from "../ui/celebrate.js";
 import { ChapterBase } from "./ChapterBase.js";
 import { stateFromBoard, genMoves, solvePuzzle, bestMove, rivalMove } from "../game/Engine.js";
 
@@ -259,6 +260,7 @@ export class Chapter2 extends ChapterBase {
       this.data.missionDone = true;
       this.sound.playSuccess();
       this.ui.showProgress("ch1.race.wonShort");
+      celebrate(this.board);
       this.ui.showMessage("ch2.mission.won");
       this.goTo(6, 2600);
       return;

@@ -1,3 +1,4 @@
+import { celebrate } from "../ui/celebrate.js";
 import { Board } from "../game/Board.js";
 import { solveCaptureAll } from "../game/Solver.js";
 import { stateFromBoard, genMoves, bestMove, rivalMove } from "../game/Race.js";
@@ -450,6 +451,7 @@ export class Chapter1 {
       this.data.raceCompleted = true;
       this.sound.playSuccess();
       this.ui.showProgress("ch1.race.wonShort");
+      celebrate(this.board);
       this.ui.showMessage("ch1.race.won");
       this.goTo(7, 2600);
       return;

@@ -1,3 +1,4 @@
+import { celebrate } from "../ui/celebrate.js";
 import { ChapterBase } from "./ChapterBase.js";
 import { stateFromBoard, genMoves, applyMove, solvePuzzle, bestMove, rivalMove } from "../game/Engine.js";
 
@@ -345,6 +346,7 @@ export class StepChapter extends ChapterBase {
     this.ui.hideHintButton();
     if (result === "w") {
       this.ui.showProgress("ch1.race.wonShort");
+      celebrate(this.board);
       this.currentObjective = "mission-over";
       return this.finishStep(this.step.won, 2600);
     }
