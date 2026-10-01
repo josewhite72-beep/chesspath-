@@ -66,6 +66,7 @@ export class ChapterBase {
     this.board.dangerCheck = null;
     this.manualPromotion = false;
     clearTimeout(this.transitionTimer);
+    this.goToken = null;
     this.stopIdleTimer();
     this.currentObjective = null;
     this.board.lock();
@@ -77,6 +78,7 @@ export class ChapterBase {
 
   async runPhase(phase) {
     clearTimeout(this.transitionTimer);
+    this.goToken = null;
     this.stopIdleTimer();
     this.board.clearTargets();
     this.phase = phase;
@@ -89,7 +91,13 @@ export class ChapterBase {
     this.board.lock();
     this.stopIdleTimer();
     clearTimeout(this.transitionTimer);
-    this.transitionTimer = setTimeout(() => {
+    // Espera la pausa y, además, a que la voz termine la indicación en curso
+    const token = {};
+    this.goToken = token;
+    this.transitionTimer = setTimeout(async () => {
+      await this.sound.whenIdle();
+      if (this.goToken !== token) return;
+      this.goToken = null;
       if (typeof phaseOrFn === "function") phaseOrFn();
       else this.runPhase(phaseOrFn);
     }, delay);

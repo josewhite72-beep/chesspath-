@@ -87,6 +87,7 @@ export class Chapter1 {
   /** Detiene todo al salir al mapa (temporizadores, demo, voz, overlay) */
   stop() {
     clearTimeout(this.transitionTimer);
+    this.goToken = null;
     this.stopIdleTimer();
     this.demoToken = null;
     this.demoRunning = false;
@@ -102,6 +103,7 @@ export class Chapter1 {
   // ─────────────────────────────────────
   async runPhase(phase) {
     clearTimeout(this.transitionTimer);
+    this.goToken = null;
     this.stopIdleTimer();
     this.demoRunning = false;
     this.demoToken = null;
@@ -127,7 +129,13 @@ export class Chapter1 {
     this.board.lock();
     this.stopIdleTimer();
     clearTimeout(this.transitionTimer);
-    this.transitionTimer = setTimeout(() => {
+    // Espera la pausa y, además, a que la voz termine la indicación en curso
+    const token = {};
+    this.goToken = token;
+    this.transitionTimer = setTimeout(async () => {
+      await this.sound.whenIdle();
+      if (this.goToken !== token) return;
+      this.goToken = null;
       if (typeof phaseOrFn === "function") phaseOrFn();
       else this.runPhase(phaseOrFn);
     }, delay);
