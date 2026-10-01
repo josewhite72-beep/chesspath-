@@ -4,7 +4,7 @@
  * (funciona sin internet) y actualiza la copia en segundo plano.
  * Al publicar cambios grandes, sube CACHE_VERSION.
  */
-const CACHE_VERSION = "chesspath-v18";
+const CACHE_VERSION = "chesspath-v19";
 
 const APP_SHELL = [
   "./",
@@ -44,6 +44,7 @@ const APP_SHELL = [
   "./js/ui/Kingdom.js",
   "./js/ui/MapScreen.js",
   "./js/ui/icons.js",
+  "./js/ui/celebrate.js",
   "./js/chapters/registry.js",
   "./js/utils/i18n.js",
   "./js/utils/SoundManager.js",
