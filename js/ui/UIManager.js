@@ -69,12 +69,12 @@ export class UIManager {
     if (this.state.choices) this.renderChoices(this.state.choices);
 
     // Volver a leer en voz alta en el nuevo idioma
-    if (overlay) this.speak(overlay.key, overlay.params);
-    else if (message) this.speak(message.key, message.params);
+    if (overlay) this.speak(overlay.key, overlay.params, true);
+    else if (message) this.speak(message.key, message.params, true);
   }
 
-  speak(key, params) {
-    this.sound.speak(t(key, params).replace(/\n+/g, ". "));
+  speak(key, params, interrupt = false) {
+    this.sound.speak(t(key, params).replace(/\n+/g, ". "), { interrupt });
   }
 
   // ─── Silencio ──────────────────────────────────────
@@ -98,6 +98,7 @@ export class UIManager {
       // Solo un overlay activo a la vez
       if (this.overlayHandler) this.overlayBtn.removeEventListener("click", this.overlayHandler);
       const handler = () => {
+        this.sound.stopSpeaking();   // el jugador decidió continuar
         this.overlay.classList.add("hidden");
         this.overlayBtn.removeEventListener("click", handler);
         this.overlayHandler = null;
