@@ -54,11 +54,51 @@ export class SoundManager {
     return null;
   }
 
-  speak(text) {
+  /**
+   * Lee un texto en voz alta SIN cortar la indicación que se está leyendo:
+   * si hay una en curso, la nueva espera su turno (solo se guarda la más reciente).
+   * interrupt: true → corta lo que suena (acción del usuario: cambiar idioma, continuar).
+   */
+  speak(text, { interrupt = false } = {}) {
     if (this.muted || !this.synth) return;
+    if (!interrupt && this.isSpeaking()) {
+      this.pendingText = text;
+      return;
+    }
+    this.pendingText = null;
+    try {
+      this.synth.cancel();
+      this._say(text);
+    } catch (e) {
+      // La voz nunca debe bloquear el juego
+      console.warn("Voz no disponible:", e);
+      this.speechUntil = 0;
+    }
+  }
 
-    this.synth.cancel();
+  isSpeaking() {
+    return !!this.synth && (this.synth.speaking || this.synth.pending) && Date.now() < (this.speechUntil || 0);
+  }
 
+  /** Promesa que se cumple cuando termina de leer (con tope de espera) */
+  whenIdle(maxMs = 9000) {
+    const start = Date.now();
+    return new Promise(resolve => {
+      const check = () => {
+        if ((!this.isSpeaking() && !this.pendingText) || this.muted || Date.now() - start > maxMs) resolve();
+        else setTimeout(check, 150);
+      };
+      check();
+    });
+  }
+
+  _next() {
+    const text = this.pendingText;
+    this.pendingText = null;
+    if (text && !this.muted) { try { this._say(text); } catch (e) { this.speechUntil = 0; } }
+  }
+
+  _say(text) {
     const lang = getLang();
     const utterance = new SpeechSynthesisUtterance(text);
     const voice = this._pickVoice(lang);
@@ -67,11 +107,28 @@ export class SoundManager {
     utterance.rate = lang === "en" ? 0.9 : 0.95;
     utterance.pitch = 1;
     utterance.volume = 1;
-
+    // Tope de seguridad: algunos Android no avisan cuándo termina la voz
+    this.speechUntil = Date.now() + 1500 + text.length * 95;
+    const done = () => {
+      if (this.current !== utterance) return;
+      this.current = null;
+      this.speechUntil = 0;
+      clearTimeout(this.safetyTimer);
+      setTimeout(() => this._next(), 250);
+    };
+    utterance.onend = done;
+    utterance.onerror = done;
+    this.current = utterance;
+    clearTimeout(this.safetyTimer);
+    this.safetyTimer = setTimeout(done, this.speechUntil - Date.now());
     this.synth.speak(utterance);
   }
 
   stopSpeaking() {
+    this.pendingText = null;
+    this.current = null;
+    this.speechUntil = 0;
+    clearTimeout(this.safetyTimer);
     this.synth?.cancel();
   }
 
