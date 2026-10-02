@@ -2,6 +2,13 @@ import { Piece } from "./Piece.js";
 import { MoveValidator, DEFAULT_RULES } from "./MoveValidator.js";
 import { applyMove } from "./Engine.js";
 
+/** La pieza capturada sale volando, girando, hacia un lado */
+function knockOut(el) {
+  el.style.setProperty("--dir", Math.random() < 0.5 ? -1 : 1);
+  el.classList.add("captured");
+  setTimeout(() => el.remove(), 620);
+}
+
 export class Board {
   constructor(size = 6) {
     this.size = size;
@@ -19,6 +26,7 @@ export class Board {
     this.locked = false;          // bloquea toques durante transiciones
     this.meta = null;             // { castle, ep } cuando se juega con reglas completas
     this.coords = false;          // mostrar coordenadas a–h / 1–8
+    this.showRoutes = false;      // fases de enseñanza: el caballo muestra sus rutas en L
   }
 
   setRules(rules = {}) {
@@ -182,9 +190,11 @@ export class Board {
     });
 
     this.onSelect?.(piece, this.legalMoves);
+    if (this.showRoutes && piece.type === "n" && this.legalMoves.length) this.previewRoutes(piece);
   }
 
   deselect() {
+    this.stopPreview();
     if (this.selected) {
       const square = this.getSquareElement(this.selected.row, this.selected.col);
       square?.classList.remove("selected");
@@ -195,6 +205,67 @@ export class Board {
     this.element.querySelectorAll(".forbidden").forEach(el => el.classList.remove("forbidden"));
     this.selected = null;
     this.legalMoves = [];
+  }
+
+  /* ─────────── Rutas: cómo llega cada pieza ─────────── */
+
+  /** Casillas que recorre una pieza (sin la de salida); el caballo hace su L: 2 rectas + 1 de lado */
+  routeOf(type, r0, c0, r1, c1) {
+    const dr = r1 - r0, dc = c1 - c0;
+    const sr = Math.sign(dr), sc = Math.sign(dc);
+    const path = [];
+    if (type === "n") {
+      if (Math.abs(dr) === 2) path.push([r0 + sr, c0], [r0 + dr, c0]);
+      else path.push([r0, c0 + sc], [r0, c0 + dc]);
+      path.push([r1, c1]);
+      return path;
+    }
+    // Deslizamiento en línea recta o diagonal (torre, alfil, dama, peón doble)
+    if (dr === 0 || dc === 0 || Math.abs(dr) === Math.abs(dc)) {
+      let r = r0 + sr, c = c0 + sc;
+      while (r !== r1 || c !== c1) { path.push([r, c]); r += sr; c += sc; }
+    }
+    path.push([r1, c1]);
+    return path;
+  }
+
+  /** Dibuja el recorrido casilla por casilla; con números 1-2-3 para el caballo */
+  showTrail(type, r0, c0, r1, c1, { step = 110, hold = 650, cls = "trail" } = {}) {
+    const path = this.routeOf(type, r0, c0, r1, c1);
+    if (path.length < 2 && type !== "n") return 0;
+    const numbered = type === "n";
+    path.forEach(([r, c], i) => {
+      setTimeout(() => {
+        const el = this.getSquareElement(r, c);
+        if (!el) return;
+        el.classList.add(cls);
+        if (numbered) el.dataset.step = i + 1;
+        setTimeout(() => {
+          el.classList.remove(cls);
+          if (numbered) delete el.dataset.step;
+        }, hold + (path.length - i) * step);
+      }, i * step);
+    });
+    return path.length * step + hold;
+  }
+
+  /** Caballo seleccionado: muestra sus rutas en L una por una, en bucle */
+  previewRoutes(piece) {
+    this.stopPreview();
+    const moves = this.legalMoves.slice();
+    let i = 0;
+    const next = () => {
+      if (this.selected !== piece) return;
+      const m = moves[i++ % moves.length];
+      const ms = this.showTrail("n", piece.row, piece.col, m.row, m.col, { step: 160, hold: 380, cls: "route" });
+      this.previewTimer = setTimeout(next, ms + 120);
+    };
+    this.previewTimer = setTimeout(next, 250);
+  }
+
+  stopPreview() {
+    clearTimeout(this.previewTimer);
+    this.element?.querySelectorAll(".route").forEach(el => { el.classList.remove("route"); delete el.dataset.step; });
   }
 
   movePiece(piece, toRow, toCol, move = null) {
@@ -221,17 +292,18 @@ export class Board {
       this.grid[er][ec] = null;
       if (captured?.element) {
         const ghost = captured.element;
-        ghost.classList.add("captured");
-        setTimeout(() => ghost.remove(), 360);
+        knockOut(ghost);
       }
       captured = captured ? { ...captured, element: null } : captured;
     }
     if (captured && captured.element) {
       // La pieza capturada se hunde y desaparece
       const ghost = captured.element;
-      ghost.classList.add("captured");
-      setTimeout(() => ghost.remove(), 360);
+      knockOut(ghost);
     }
+
+    // Rastro del recorrido (todas las piezas, también las del rival)
+    this.showTrail(piece.type, fromRow, fromCol, toRow, toCol);
 
     // Actualizar grid
     this.grid[fromRow][fromCol] = null;
