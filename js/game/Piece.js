@@ -96,6 +96,7 @@ export class Piece {
     el.dataset.type = this.type;
     el.dataset.color = this.color;
     el.innerHTML = this.svg();
+    el.style.setProperty("--bd", `-${(Math.random() * 2.6).toFixed(2)}s`);  // cada pieza respira a su ritmo
     this.element = el;
     return el;
   }
