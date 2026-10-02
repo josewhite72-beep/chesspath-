@@ -45,6 +45,8 @@ export class StepChapter extends ChapterBase {
   async runStep(step) {
     this.useBoard(step.size || 6);
     this.board.coords = !!step.coords;
+    // Rutas del caballo: solo mientras se aprende (no en misiones ni partidas)
+    this.board.showRoutes = step.type !== "mission" && step.routes !== false;
     this.step = step;
     this.demoToken = null;
     this.board.onSquareTap = null;

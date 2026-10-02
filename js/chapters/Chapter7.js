@@ -67,7 +67,7 @@ const MAX_PLIES = 300;
 
 export class Chapter7 extends StepChapter {
   constructor(opts) {
-    const game = (n, star) => ({ type: "custom", star, size: 8, coords: true,
+    const game = (n, star) => ({ type: "custom", star, size: 8, coords: true, routes: false,
       run() { this.level = n; this.gameLosses = 0; return this.startGame(true); },
       onMove(info) { return this.gameMove(info); } });
 
