@@ -388,7 +388,7 @@ const DICT = {
     "ch7.shield.keep": "Seguir así",
     "ch7.shield.undone": "Jugada deshecha. Piensa otra.",
     "ch7.mastered": "Has recorrido todo el reino.\nYa sabes jugar ajedrez de verdad.\n\n👑 Guardián del Gran Reino 👑",
-    "ch7.complete": "¡Chesspath completado!\n\nGracias por jugar.\nCreado por PanaMentorLabs.\n\nSigue practicando: cada partida te hace más fuerte.",
+    "ch7.complete": "¡Chesspath completado!\n\nGracias por jugar.\nCreado por JoséWhite's PanaMentorLabs.\n\nSigue practicando: cada partida te hace más fuerte.",
     "ch1.done": "Capítulo 1 completado.\n(Próximamente Capítulo 2)"
   },
   en: {
@@ -774,7 +774,7 @@ const DICT = {
     "ch7.shield.keep": "Keep it",
     "ch7.shield.undone": "Move undone. Think of another one.",
     "ch7.mastered": "You have traveled the whole kingdom.\nNow you truly know how to play chess.\n\n👑 Guardian of the Great Kingdom 👑",
-    "ch7.complete": "Chesspath complete!\n\nThanks for playing.\nMade by PanaMentorLabs.\n\nKeep practicing: every game makes you stronger.",
+    "ch7.complete": "Chesspath complete!\n\nThanks for playing.\nMade by JoséWhite's PanaMentorLabs.\n\nKeep practicing: every game makes you stronger.",
     "ch1.done": "Chapter 1 complete.\n(Chapter 2 coming soon)"
   }
 };
